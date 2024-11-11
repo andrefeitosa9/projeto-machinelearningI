@@ -29,7 +29,24 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
+def clf_metrics_com_return(modelo, X, y_true, label, plot_conf_mat=True, print_cr=True):
+    
+    if print_cr:
+        print(f"\nMétricas de avaliação de {label}:\n")
+    
+    y_pred = modelo.predict(X)
 
+    if plot_conf_mat:
+        fig, ax = plt.subplots(1, 2, figsize=(12, 4))
+
+        ConfusionMatrixDisplay.from_predictions(y_true, y_pred, ax=ax[0]) 
+        ConfusionMatrixDisplay.from_predictions(y_true, y_pred, normalize="all", ax=ax[1])
+        plt.show()
+
+    if print_cr:
+        print(classification_report(y_true, y_pred))
+    
+    return classification_report(y_true, y_pred, output_dict=True)
 
 df = pd.read_csv("dados\dados_tratados_thiago.csv")
 
@@ -117,6 +134,7 @@ resultado_experimentos = {"estimador": [], "recall_treino": [], "recall_teste": 
 for nome_modelo, pipeline in dict_pipes_tunado.items():
     recall_treino_lista = []
     recall_teste_lista = []
+    soma = 0
     
     # Realiza a validação cruzada estratificada
     for indice_treino, indice_valida in kf.split(X_treino, y_treino):
@@ -135,6 +153,11 @@ for nome_modelo, pipeline in dict_pipes_tunado.items():
         y_pred_valida = pipeline.predict(X_valida_split)
         recall_teste = recall_score(y_valida_split, y_pred_valida, average='binary')
         recall_teste_lista.append(recall_teste)
+        soma += 1
+
+        print(f"\nClassification Report do modelo {nome_modelo} no CV número {soma}\n")
+
+        print(classification_report(y_valida_split, y_pred_valida))
     
     # Calcula a média dos recalls
     recall_treino_medio = np.mean(recall_treino_lista)
@@ -157,3 +180,4 @@ df_resultados["gap"] = (df_resultados["recall_treino"] - df_resultados["recall_t
 df_resultados = df_resultados.sort_values("recall_teste", ascending=False)
 
 print(df_resultados)
+
